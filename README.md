@@ -17,8 +17,9 @@ keystore server. persistance on disk with a 1:2 file structure.
 
  1. Download keystore release
  2. Unpack release
- 3. make data writable
- 4. Run server
+ 3. cd release
+ 4. make data writable
+ 5. Run server
 
 ``` bash
 java -jar keystore.jar

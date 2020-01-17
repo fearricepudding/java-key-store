@@ -16,9 +16,7 @@ public class Storage {
 	public String key = "";
 	public String data = "";
 	public String status = "";
-	
 	private static int levels = 2;
-
 
 	/**
 	 * Constructor set hash of key
@@ -26,10 +24,8 @@ public class Storage {
 	 * @param k key
 	 */
 	public Storage(String k) {
-	
 		// Set the public key string
 		key = toMd5(k);
-
 	}
 
 	/**
@@ -42,25 +38,17 @@ public class Storage {
 	public static String toMd5(String k){
 		try {
 		 	MessageDigest md = MessageDigest.getInstance("MD5");
-	        byte[] hashInBytes = md.digest(k.getBytes(StandardCharsets.UTF_8));
-	
-	        StringBuilder sb = new StringBuilder();
-	        for (byte b : hashInBytes) {
-	            sb.append(String.format("%02x", b));
-	        }
-	        return sb.toString();
-		
+			byte[] hashInBytes = md.digest(k.getBytes(StandardCharsets.UTF_8));
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hashInBytes) {
+			    sb.append(String.format("%02x", b));
+			}
+			return sb.toString();
 		} catch (NoSuchAlgorithmException e) {
-			
 			e.printStackTrace();
-			
-	
 			return "md5 Failed";
-			
 		}
-	        
 	}
-	
 	
 	/**
 	 * Delete an item with key
@@ -70,7 +58,6 @@ public class Storage {
 	 * @return Boolean status
 	 */
 	public Boolean delete(String deleteKey) {
-		
 		// Loop through the directory levels
 		for(int i = 0; i < levels; i++) {
 			String file = toMd5(deleteKey);
@@ -78,18 +65,14 @@ public class Storage {
 			String location = dir()+getSlash()+currentDir+getSlash()+file;
 			boolean exists = new File(location).exists();
 			if(exists) {
-				
 				new File(location).delete();
 				status = "ok";
 				return true;
 			}
-			
 		}
 		status = "error";
 		return false;
-
 	}
-	
 	
 	/**
 	 * Get the OS style directory slash
@@ -99,17 +82,14 @@ public class Storage {
 	static String getSlash() {
 		String os = System.getProperty("os.name");
 		String slash; 
-		
 		if(os == "Windows") {
 			slash = "\\";
 		} else {
 			slash = "/";
 		}
-		
 		return slash; 
 	}
 	
-
 	/**
 	 * Generate data directory path
 	 * 
@@ -127,12 +107,9 @@ public class Storage {
 	 * @return - data from key
 	 */
 	public Boolean find(String findKey) {
-		
 		try {
-			
 			//Make sure the key is an md5 hash
 			if (key.length() == 32) {
-				
 				// loop through the storage levels
 				for(int i = 0; i < levels; i++) {
 					String file = toMd5(findKey);
@@ -140,33 +117,24 @@ public class Storage {
 					String location = dir()+getSlash()+currentDir+getSlash()+file;
 					boolean exists = new File(location).exists();
 					if(exists) {
-						
 						Path path = Paths.get(location);
 						List<String> list = Files.readAllLines(path);
 						this.data = "";
 						list.forEach( line -> this.data = this.data+line );
 						status = "ok";
 						return true;
-						
 					}
 				}
-				
-				
 			} else {
 				System.out.println("Not md5.");
 			}
 			status = "error";
-		
-			
 		} catch (IOException e) {
 			System.out.println("IO error");
-	
 		}
 		status = "error";
 		return false;
-
 	}
-	
 	
 	/**
 	 * Store key and data in the data folder
@@ -179,14 +147,12 @@ public class Storage {
 	public boolean store(String data, String newKey, Boolean overwrite) {
 		try {
 			if ((data.length()) > 0) {
-				
 				String selectedDataDir = null;
 				int currentDataDirSize = Integer.MAX_VALUE;
 				boolean found = (this.find(newKey) == true);
 				if(found && overwrite == false) {
 					System.out.println("Overwrite disabled.");
 				} else {
-				
 					for(int i = 0; i < levels; i++) {
 						String pathName = toMd5( Integer.toString(i) );
 						String currentPath = dir()+getSlash()+pathName;
@@ -194,7 +160,6 @@ public class Storage {
 						File location =  new File(currentPath);
 						if(location.exists()) {
 							int size = location.list().length;
-							
 							if(size <= currentDataDirSize) {
 								selectedDataDir = currentPath; 
 								currentDataDirSize = size;
@@ -206,12 +171,9 @@ public class Storage {
 							currentDataDirSize = 0;
 						}
 					}
-					
 					String file = toMd5(newKey);
-					
 					Path path = Paths.get(selectedDataDir+getSlash()+file);
 					Files.write(path, data.getBytes(), StandardOpenOption.CREATE);
-					
 					status = "ok";
 					return true;
 				}
@@ -219,14 +181,10 @@ public class Storage {
 				status = "error";
 				return true;
 			}
-			
 		} catch(IOException e) {
 			System.out.println("error");
 		}
-		
 		status = "error";
 		return false;
 	}
-	
-	
 }

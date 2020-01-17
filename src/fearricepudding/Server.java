@@ -13,19 +13,15 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import com.google.gson.Gson;
-
 import fearricepudding.Storage;
 
 public class Server implements Runnable {
-	
 	
 	private static final int PORT = 8080;
 	private static final boolean debug = false;
 	private static boolean ALLOW_OVERWRITE = false;
 	static String version = null;
-
 	private Socket connect;
 	
 	/**
@@ -43,7 +39,6 @@ public class Server implements Runnable {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
 		try {
 			if (args[0] != null) {
 				ALLOW_OVERWRITE = true;
@@ -51,7 +46,6 @@ public class Server implements Runnable {
 		} catch(ArrayIndexOutOfBoundsException e) {
 			ALLOW_OVERWRITE = false;
 		}
-		
 		if(debug) {
 			System.out.println("=== Starting server ===");
 			System.out.println("Version: "+getVersion());
@@ -61,24 +55,17 @@ public class Server implements Runnable {
 		} else {
 			System.out.println("Server ready...");
 		}
-		
-		
 		try {
 			@SuppressWarnings("resource")
 			ServerSocket serverConnect = new ServerSocket(PORT);
-			
 			while(true) {
 				Server myserver = new Server(serverConnect.accept());
-				
-			
-				
 				Thread thread = new Thread(myserver);
 				thread.start();
 			}
 		} catch (IOException e) {
 			System.out.println("Server error - "+ e.getMessage());
 		}
-		
 	}
 	
 	/**
@@ -90,38 +77,29 @@ public class Server implements Runnable {
 		try {
 			String location = System.getProperty("user.dir");
 			Path path = Paths.get(location+Storage.getSlash()+"version");
-			
 			List<String> list = Files.readAllLines(path);
-			
 			list.forEach(line -> version = line );
 		}catch(IOException e) {
 			System.out.println("Version error: "+e.getMessage());
 		}
-		
 		return version;
 	}
 
-
 	@Override
 	public void run() {
-		
 		BufferedReader in = null;
 		PrintWriter out = null;
 		BufferedOutputStream dataOut = null;
 		String key = null;
-		
+		String contentMimeType;
+		String postData;
 		try {
-			
 			in = new BufferedReader(new InputStreamReader(connect.getInputStream()));
 			out = new PrintWriter(connect.getOutputStream());
 			dataOut = new BufferedOutputStream(connect.getOutputStream());
-			
-			
 			String input = in.readLine();
 			StringTokenizer parse = new StringTokenizer(input);
 			String method = parse.nextToken().toUpperCase();
-	
-			
 			String line;
 			int postDataI = -1;
 			while ((line = in.readLine()) != null && (line.length() != 0)) {
@@ -130,22 +108,16 @@ public class Server implements Runnable {
 					line.substring(line.indexOf("Content-Length:") + 16,line.length())).intValue();
 				}
 			}
-			String postData = "";
+			postData = "";
 			if (postDataI > 0) {
 			    char[] charArray = new char[postDataI];
 			    in.read(charArray, 0, postDataI);
 			    postData = new String(charArray);
 			}
-		
-				  
-			
 			key = parse.nextToken().toLowerCase().substring(1);
-			
-			
 			Storage data = new Storage(key);
 			Gson gson = new Gson();
-			
-			String contentMimeType = "application/json";
+			contentMimeType = "application/json";
 			out.println("HTTP/1.1 200 OK");
 			out.println("Server: tinykeystore");
 			out.println("Date: " + new Date());
@@ -155,33 +127,22 @@ public class Server implements Runnable {
 			out.println("Content-type: " + contentMimeType);
 			out.println(); // blank line between headers and content
 			out.flush();
-      
-	
 			if(debug) {
 				System.out.println("*** new request ***");
 				System.out.println("Method: "+method);
 				System.out.println("Request key: "+key);
 				System.out.println("post: "+postData);
 			}
-			
 			if(method.equals("GET")) {
-				
 				String response = null;
-	
 				// *** GET METHOD *** //
-				
 				data.find(key);
 				response = gson.toJson(data);
-				
 				dataOut.write(response.getBytes(), 0, response.getBytes().length);
 				dataOut.flush();
-			
 			}else if(method.equals("PUT")) {
-				
 				// *** PUT METHOD *** //
-				
 				String response = null;
-			
 				boolean succ = data.store(postData, key, ALLOW_OVERWRITE);
 				if(succ) {
 					data.find(key);
@@ -189,48 +150,32 @@ public class Server implements Runnable {
 				} else {
 					 response = "{data:\"Key exists, overwrite disabled\", status:\"error\"}";
 				}
-	
-			
 				dataOut.write(response.getBytes(), 0, response.getBytes().length);
 				dataOut.flush();
-				
 			}else if(method.contentEquals("DELETE")) {
-				
 				// *** DELETE METHOD *** //
-				
 				String response = null;
-				
 				boolean succ = data.delete(key);
 				if(succ) {
 					response = "{status:\"ok\"}";
 				}else {
 					response = "{status:\"error\"}";
 				}
-				
 				dataOut.write(response.getBytes(), 0, response.getBytes().length);
 				dataOut.flush();
-				
-				
 			}
-			
 		} catch (IOException e) {
 			System.out.println("Genral run error");
 			e.printStackTrace();
 		} finally {
-			
 			try {
-			
 				in.close();
 				out.close();
 				dataOut.close();
 				connect.close();
-			
 			} catch (IOException e) {
 				System.out.println("Error closing steam: "+ e.getMessage());
 			}
-			
 		}
 	}
-	
 }
-

@@ -13,7 +13,6 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
-import com.google.gson.Gson;
 import fearricepudding.Storage;
 
 public class Server implements Runnable {
@@ -26,18 +25,12 @@ public class Server implements Runnable {
 	
 	/**
 	 * Generate socket
-	 * s
 	 * @param c
 	 */
 	public Server(Socket c) {
 		connect = c;
 	}
 	
-	/**
-	 * Starting point
-	 * 
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		try {
 			if (args[0] != null) {
@@ -70,7 +63,6 @@ public class Server implements Runnable {
 	
 	/**
 	 * Get version string from version file
-	 * 
 	 * @return version string
 	 */
 	public static String getVersion() {
@@ -104,8 +96,7 @@ public class Server implements Runnable {
 			int postDataI = -1;
 			while ((line = in.readLine()) != null && (line.length() != 0)) {
 				if (line.indexOf("Content-Length:") > -1) {
-				postDataI =  Integer.valueOf(
-					line.substring(line.indexOf("Content-Length:") + 16,line.length())).intValue();
+					postDataI = Integer.valueOf(line.substring(line.indexOf("Content-Length:") + 16,line.length())).intValue();
 				}
 			}
 			postData = "";
@@ -115,8 +106,7 @@ public class Server implements Runnable {
 			    postData = new String(charArray);
 			}
 			key = parse.nextToken().toLowerCase().substring(1);
-			Storage data = new Storage(key);
-			Gson gson = new Gson();
+			Storage data = new Storage();
 			contentMimeType = "application/json";
 			out.println("HTTP/1.1 200 OK");
 			out.println("Server: tinykeystore");
@@ -133,37 +123,29 @@ public class Server implements Runnable {
 				System.out.println("Request key: "+key);
 				System.out.println("post: "+postData);
 			}
+			String response = "";
 			if(method.equals("GET")) {
-				String response = null;
 				// *** GET METHOD *** //
-				data.find(key);
-				response = gson.toJson(data);
-				dataOut.write(response.getBytes(), 0, response.getBytes().length);
-				dataOut.flush();
+				response = data.get(key);
 			}else if(method.equals("PUT")) {
 				// *** PUT METHOD *** //
-				String response = null;
 				boolean succ = data.store(postData, key, ALLOW_OVERWRITE);
 				if(succ) {
-					data.find(key);
-					response = gson.toJson(data);
+					response = data.get(key);
 				} else {
 					 response = "{data:\"Key exists, overwrite disabled\", status:\"error\"}";
 				}
-				dataOut.write(response.getBytes(), 0, response.getBytes().length);
-				dataOut.flush();
 			}else if(method.contentEquals("DELETE")) {
 				// *** DELETE METHOD *** //
-				String response = null;
 				boolean succ = data.delete(key);
 				if(succ) {
 					response = "{status:\"ok\"}";
 				}else {
 					response = "{status:\"error\"}";
 				}
-				dataOut.write(response.getBytes(), 0, response.getBytes().length);
-				dataOut.flush();
 			}
+			dataOut.write(response.getBytes(), 0, response.getBytes().length);
+			dataOut.flush();
 		} catch (IOException e) {
 			System.out.println("Genral run error");
 			e.printStackTrace();

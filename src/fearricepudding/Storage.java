@@ -16,23 +16,19 @@ public class Storage {
 	public String key = "";
 	public String data = "";
 	public String status = "";
-	private static int levels = 2;
+	private static int levels = 2; // Folder structure for storing values
 
 	/**
 	 * Constructor set hash of key
-	 * 
 	 * @param k key
 	 */
 	public Storage(String k) {
-		// Set the public key string
 		key = toMd5(k);
 	}
 
 	/**
-	 * Convert a string to an MD5 hash
-	 * 
-	 * @param k String to hash
-	 * 
+	 * Convert a string to an MD5 hash 
+	 * @param k String to hash 
 	 * @return MD5 hash
 	 */
 	public static String toMd5(String k){
@@ -52,13 +48,12 @@ public class Storage {
 	
 	/**
 	 * Delete an item with key
-	 * 
 	 * @param deleteKey - key to delete
-	 * 
 	 * @return Boolean status
+	 *
+	 * TODO: HashTable to find key
 	 */
 	public Boolean delete(String deleteKey) {
-		// Loop through the directory levels
 		for(int i = 0; i < levels; i++) {
 			String file = toMd5(deleteKey);
 			String currentDir = toMd5(Integer.toString(i));
@@ -76,7 +71,6 @@ public class Storage {
 	
 	/**
 	 * Get the OS style directory slash
-	 * 
 	 * @return OS directory slash type
 	 */
 	static String getSlash() {
@@ -92,7 +86,6 @@ public class Storage {
 	
 	/**
 	 * Generate data directory path
-	 * 
 	 * @return data directory path
 	 */
 	static String dir() {
@@ -101,16 +94,14 @@ public class Storage {
 	
 	/**
 	 * Get the key data from cache or storage
-	 * 
 	 * @param findKey - key to find data from
-	 * 
 	 * @return - data from key
+	 *
+	 * TODO: Use hashtable to find key value
 	 */
 	public Boolean find(String findKey) {
 		try {
-			//Make sure the key is an md5 hash
-			if (key.length() == 32) {
-				// loop through the storage levels
+			if (key.length() == 32) { // is MD5?
 				for(int i = 0; i < levels; i++) {
 					String file = toMd5(findKey);
 					String currentDir = toMd5(Integer.toString(i));
@@ -138,11 +129,11 @@ public class Storage {
 	
 	/**
 	 * Store key and data in the data folder
-	 * 
 	 * @param data - data to store
 	 * @param newKey - key to store with
-	 * 
 	 * @return - boolean status
+	 *
+	 * TODO: Use Hashtable to choose where to store file. 
 	 */
 	public boolean store(String data, String newKey, Boolean overwrite) {
 		try {
@@ -166,7 +157,6 @@ public class Storage {
 							}
 						}else {
 							location.mkdir();
-							
 							selectedDataDir = currentPath; 
 							currentDataDirSize = 0;
 						}

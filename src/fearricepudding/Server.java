@@ -26,18 +26,12 @@ public class Server implements Runnable {
 	
 	/**
 	 * Generate socket
-	 * s
 	 * @param c
 	 */
 	public Server(Socket c) {
 		connect = c;
 	}
 	
-	/**
-	 * Starting point
-	 * 
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		try {
 			if (args[0] != null) {
@@ -70,7 +64,6 @@ public class Server implements Runnable {
 	
 	/**
 	 * Get version string from version file
-	 * 
 	 * @return version string
 	 */
 	public static String getVersion() {
@@ -104,8 +97,7 @@ public class Server implements Runnable {
 			int postDataI = -1;
 			while ((line = in.readLine()) != null && (line.length() != 0)) {
 				if (line.indexOf("Content-Length:") > -1) {
-				postDataI =  Integer.valueOf(
-					line.substring(line.indexOf("Content-Length:") + 16,line.length())).intValue();
+					postDataI = Integer.valueOf(line.substring(line.indexOf("Content-Length:") + 16,line.length())).intValue();
 				}
 			}
 			postData = "";

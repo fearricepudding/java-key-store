@@ -10,20 +10,31 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 public class Storage {
 	
-	public String key = "";
-	public String data = "";
-	public String status = "";
-	private static int levels = 2; // Folder structure for storing values
+	private static int levels = 5; // Folder structure for storing values
 
 	/**
 	 * Constructor set hash of key
 	 * @param k key
 	 */
-	public Storage(String k) {
-		key = toMd5(k);
+	public Storage() {
+		//	System.out.println("[*] Storage");
+	}
+
+	/**
+	 * Get hashtable number
+	 * @param h String hash of key
+	 * @return Int level where stored
+	 */
+	public static String calcHashValue(String h){
+		int mid = (h.length()-1)/2;
+		char midChar = h.charAt(mid);
+		int midSquare = (int)midChar*(int)midChar;
+		int hash = midSquare % levels; 
+		return String.valueOf(hash);
 	}
 
 	/**
@@ -31,7 +42,7 @@ public class Storage {
 	 * @param k String to hash 
 	 * @return MD5 hash
 	 */
-	public static String toMd5(String k){
+	private String toMd5(String k){
 		try {
 		 	MessageDigest md = MessageDigest.getInstance("MD5");
 			byte[] hashInBytes = md.digest(k.getBytes(StandardCharsets.UTF_8));
@@ -47,6 +58,17 @@ public class Storage {
 	}
 	
 	/**
+	 * Find key
+	 * @param key String
+	 * @return String path to key
+	 */
+	private String getPathToKey(String key){
+		String pathHash = toMd5(calcHashValue(key));
+		String keyHash = toMd5(key);
+		return dir()+getSlash()+pathHash+getSlash()+keyHash;
+	}
+
+	/**
 	 * Delete an item with key
 	 * @param deleteKey - key to delete
 	 * @return Boolean status
@@ -54,26 +76,18 @@ public class Storage {
 	 * TODO: HashTable to find key
 	 */
 	public Boolean delete(String deleteKey) {
-		for(int i = 0; i < levels; i++) {
-			String file = toMd5(deleteKey);
-			String currentDir = toMd5(Integer.toString(i));
-			String location = dir()+getSlash()+currentDir+getSlash()+file;
-			boolean exists = new File(location).exists();
-			if(exists) {
-				new File(location).delete();
-				status = "ok";
-				return true;
-			}
+		String location = getPathToKey(deleteKey);
+		if(fileExists(location)) {
+			new File(location).delete();
 		}
-		status = "error";
-		return false;
+		return true;
 	}
 	
 	/**
 	 * Get the OS style directory slash
 	 * @return OS directory slash type
 	 */
-	static String getSlash() {
+	public static String getSlash() {
 		String os = System.getProperty("os.name");
 		String slash; 
 		if(os == "Windows") {
@@ -88,93 +102,83 @@ public class Storage {
 	 * Generate data directory path
 	 * @return data directory path
 	 */
-	static String dir() {
+	public static String dir() {
 		return System.getProperty("user.dir")+getSlash()+"data";
+	}
+
+	/**
+	 * Read file content
+	 * @param p String path to file
+	 * @return String file content
+	 */
+	private String readFileContent(String p){
+		Path path = Paths.get(p);
+		Charset encoding = StandardCharsets.UTF_8;
+		try{
+			byte[] encoded = Files.readAllBytes(path);
+			return new String(encoded, encoding);
+		}catch(IOException e){
+			// eh
+			System.out.println("Error reading file: "+e);
+			return "";
+		}
+	}
+
+	/**
+	 * Check if file exists
+	 * @param p String file location
+	 * @return boolean
+	 */
+	private boolean fileExists(String p){
+		return new File(p).exists();
 	}
 	
 	/**
-	 * Get the key data from cache or storage
+	 * Get the key data from storage
 	 * @param findKey - key to find data from
 	 * @return - data from key
-	 *
-	 * TODO: Use hashtable to find key value
 	 */
-	public Boolean find(String findKey) {
-		try {
-			if (key.length() == 32) { // is MD5?
-				for(int i = 0; i < levels; i++) {
-					String file = toMd5(findKey);
-					String currentDir = toMd5(Integer.toString(i));
-					String location = dir()+getSlash()+currentDir+getSlash()+file;
-					boolean exists = new File(location).exists();
-					if(exists) {
-						Path path = Paths.get(location);
-						List<String> list = Files.readAllLines(path);
-						this.data = "";
-						list.forEach( line -> this.data = this.data+line );
-						status = "ok";
-						return true;
-					}
-				}
-			} else {
-				System.out.println("Not md5.");
-			}
-			status = "error";
-		} catch (IOException e) {
-			System.out.println("IO error");
-		}
-		status = "error";
-		return false;
+	public String get(String k) {
+		String location = getPathToKey(k);
+		if(fileExists(location)) {
+			return readFileContent(location);
+		};
+		return ""; // If none exist
 	}
-	
+
+	/**
+	 * Write content to file
+	 * @param path String
+	 * @param data String
+	 * @return boolean
+	 */
+	private boolean writeContentToFile(String key, String value){
+		try{
+			String hashPath = toMd5(calcHashValue(key));
+			File location = new File(dir()+getSlash()+hashPath);
+			if(!location.exists()){
+				location.mkdir();
+			}
+			Path path = Paths.get(getPathToKey(key));
+			Files.write(path, value.getBytes(), StandardOpenOption.CREATE);
+			return true;
+		}catch(IOException e){
+			System.out.println("Error writing file: "+ e);
+			return false;
+		}
+	}	
+
 	/**
 	 * Store key and data in the data folder
 	 * @param data - data to store
 	 * @param newKey - key to store with
 	 * @return - boolean status
-	 *
-	 * TODO: Use Hashtable to choose where to store file. 
 	 */
 	public boolean store(String data, String newKey, Boolean overwrite) {
-		try {
-			if ((data.length()) > 0) {
-				String selectedDataDir = null;
-				int currentDataDirSize = Integer.MAX_VALUE;
-				boolean found = (this.find(newKey) == true);
-				if(found && overwrite == false) {
-					System.out.println("Overwrite disabled.");
-				} else {
-					for(int i = 0; i < levels; i++) {
-						String pathName = toMd5( Integer.toString(i) );
-						String currentPath = dir()+getSlash()+pathName;
-					
-						File location =  new File(currentPath);
-						if(location.exists()) {
-							int size = location.list().length;
-							if(size <= currentDataDirSize) {
-								selectedDataDir = currentPath; 
-								currentDataDirSize = size;
-							}
-						}else {
-							location.mkdir();
-							selectedDataDir = currentPath; 
-							currentDataDirSize = 0;
-						}
-					}
-					String file = toMd5(newKey);
-					Path path = Paths.get(selectedDataDir+getSlash()+file);
-					Files.write(path, data.getBytes(), StandardOpenOption.CREATE);
-					status = "ok";
-					return true;
-				}
-			} else {
-				status = "error";
-				return true;
-			}
-		} catch(IOException e) {
-			System.out.println("error");
+		String location = getPathToKey(newKey);
+		if(fileExists(location) && !overwrite){
+			return false;
 		}
-		status = "error";
-		return false;
+		return writeContentToFile(newKey, data);
 	}
 }

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-echo $1
-
-curl http://localhost:8080/$1
